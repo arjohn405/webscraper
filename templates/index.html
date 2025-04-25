@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hackathon Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">Hackathon Finder</div>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="active">Home</a>
+                <a href="{{ url_for('scrape') }}">Scrape</a>
+                <a href="#">About</a>
+                <a href="#">Contact</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>Find Your Next Hackathon</h1>
+            <p>Discover and participate in exciting hackathons around the world</p>
+        </section>
+
+        <section class="hackathons-section">
+            <div class="container">
+                <div class="hackathons-grid">
+                    {% if hackathons %}
+                        {% for hackathon in hackathons %}
+                            <div class="hackathon-card">
+                                <div class="hackathon-header">
+                                    <h2>{{ hackathon.title }}</h2>
+                                    <span class="status {{ hackathon.status.lower() }}">{{ hackathon.status }}</span>
+                                </div>
+                                <div class="hackathon-details">
+                                    <p><i class="fas fa-calendar"></i> {{ hackathon.date }}</p>
+                                    <p><i class="fas fa-map-marker-alt"></i> {{ hackathon.location }}</p>
+                                    <p><i class="fas fa-trophy"></i> {{ hackathon.prize }}</p>
+                                </div>
+                                <a href="{{ hackathon.url }}" class="cta-button" target="_blank">Learn More</a>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="no-data">No hackathons available at the moment.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Hackathon Finder. All rights reserved.</p>
+    </footer>
+</body>
+</html>

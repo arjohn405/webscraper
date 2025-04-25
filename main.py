@@ -1,96 +1,147 @@
 import requests
+import json
+import os
 from bs4 import BeautifulSoup
-import csv
-from typing import List, Dict
-import re
+import html
+from datetime import datetime
 
-def normalize_text(text: str) -> str:
-    """Normalize text by removing extra spaces and newlines."""
-    return re.sub(r'\s+', ' ', text).strip()
+# ScraperAPI configuration
+API_KEY = '53afe5f076bc4ddc0e4443fb61400c6b'
+SCRAPER_API_URL = 'https://api.scraperapi.com/'
 
-def scrape_devfolio() -> List[Dict]:
-    """Scrape hackathon data from Devfolio."""
-    url = "https://devfolio.co/hackathons/open"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
+def convert_txt_to_html():
+    """Convert scraped text files to HTML format."""
+    txt_files = [f for f in os.listdir('.') if f.startswith('scraped_') and f.endswith('.txt')]
     
-    hackathons = []
+    print(f"Found text files: {txt_files}")  # Debug print
     
-    for card in soup.find_all('div', class_="sc-ZyCDH dccYnH CompactHackathonCard__StyledCard-sc-9ff45231-0 fudhHJ"):
-        title = normalize_text(card.find('h1', class_='sc-dkzDqf ikqvcK').text) if card.find('h1', class_='sc-dkzDqf ikqvcK') else ""
-        description = normalize_text(card.find('div', class_='sc-fmGnzW giVfFV Overview__StyledDescriptionCard-sc-1aead9cd-3 evNsmn').text) if card.find('div', class_='sc-fmGnzW giVfFV Overview__StyledDescriptionCard-sc-1aead9cd-3 evNsmn') else ""
-        date = normalize_text(card.find('p', class_='sc-hZgfyJ fsVoAT').text) if card.find('p', class_='sc-hZgfyJ fsVoAT') else ""
-        location = normalize_text(card.find('p', class_='sc-hZgfyJ fsVoAT').text) if card.find('p', class_='sc-hZgfyJ fsVoAT') else ""
-        link = "https://devfolio.co" + card.find('a')['href'] if card.find('a') else ""
-        
-        hackathon = {
-            "title": title,
-            "description": description,
-            "date": date,
-            "location": location,
-            "link": link,
-            "keywords": ""  # Devfolio doesn't provide keywords directly
-        }
-        hackathons.append(hackathon)
-    
-    return hackathons
+    for txt_file in txt_files:
+        try:
+            print(f"Processing {txt_file}...")  # Debug print
+            
+            # Read the text file
+            with open(txt_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Escape HTML special characters
+            content = html.escape(content)
+            
+            # Create HTML content with improved styling
+            html_content = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scraped Content - {txt_file}</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #f5f5f5;
+        }}
+        .container {{
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }}
+        h1 {{
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }}
+        pre {{
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+            overflow-x: auto;
+        }}
+        .source {{
+            color: #666;
+            font-style: italic;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }}
+        .timestamp {{
+            color: #999;
+            font-size: 0.9em;
+            text-align: right;
+            margin-top: 20px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Scraped Content</h1>
+        <div class="source">Source: {txt_file.replace('scraped_', '').replace('.txt', '')}</div>
+        <pre>{content}</pre>
+        <div class="timestamp">Generated on: {html.escape(str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')))}</div>
+    </div>
+</body>
+</html>
+"""
+            
+            # Create HTML filename
+            html_file = txt_file.replace('.txt', '.html')
+            
+            # Save the HTML file
+            with open(html_file, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            
+            print(f"Successfully converted {txt_file} to {html_file}")
+            
+        except Exception as e:
+            print(f"Error converting {txt_file}: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
 
-def scrape_devpost() -> List[Dict]:
-    """Scrape hackathon data from Devpost."""
-    url = "https://devpost.com/hackathons"
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
+def scrape_websites():
+    """Scrape data from websites using ScraperAPI."""
+    # List of URLs to scrape
+    urls = [
+        'https://devfolio.co/hackathons/open',
+        'https://devpost.com/hackathons'
+    ]
     
-    hackathons = []
-    
-    for card in soup.find_all('article', class_='flex-row tile-anchor'):
-        title = normalize_text(card.find('h1').text) if card.find('h1') else ""
-        description = normalize_text(card.find('article', class_='challenge-description').text) if card.find('article', class_='challenge-description') else ""
-        date = normalize_text(card.find('div', class_='submission-period').text) if card.find('div', class_='submission-period') else ""
-        location = normalize_text(card.find('div', class_='info').text) if card.find('div', class_='info') else ""
-        link = card.find('a')['href'] if card.find('a') else ""
-        
-        # Extract keywords from tags
-        keywords = []
-        for tag in card.find_all('span', class_='cp-tag'):
-            keywords.append(normalize_text(tag.text))
-        
-        hackathon = {
-            "title": title,
-            "description": description,
-            "date": date,
-            "location": location,
-            "link": link,
-            "keywords": ", ".join(keywords)  # Join keywords into a single string
-        }
-        hackathons.append(hackathon)
-    
-    return hackathons
-
-def save_to_csv(data: List[Dict], filename: str):
-    """Save scraped data to a CSV file."""
-    # Define the CSV column headers
-    fieldnames = ["title", "description", "date", "location", "link", "keywords"]
-    
-    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        
-        # Write the header
-        writer.writeheader()
-        
-        # Write the data rows
-        for row in data:
-            writer.writerow(row)
+    for url in urls:
+        try:
+            # Configure the API request with simplified parameters
+            payload = {
+                'api_key': API_KEY,
+                'url': url,
+                'device_type': 'desktop'
+            }
+            
+            # Make the API request
+            response = requests.get(SCRAPER_API_URL, params=payload)
+            
+            if response.status_code == 200:
+                print(f"Successfully scraped: {url}")
+                # Save the response as text file
+                filename = f"scraped_{url.split('//')[1].replace('/', '_')}.txt"
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(response.text)
+                print(f"Data saved to {filename}")
+            else:
+                print(f"Error scraping {url}: Status code {response.status_code}")
+                
+        except Exception as e:
+            print(f"Error occurred while scraping {url}: {str(e)}")
 
 if __name__ == "__main__":
-    # Scrape data from both websites
-    devfolio_data = scrape_devfolio()
-    devpost_data = scrape_devpost()
-    
-    # Combine data
-    combined_data = devfolio_data + devpost_data
-    
-    # Save to CSV file
-    save_to_csv(combined_data, "hackathons.csv")
-    
-    print("Scraping completed. Data saved to hackathons.csv.")
+    print("Starting scraping process...")
+    scrape_websites()
+    print("Converting text files to HTML...")
+    convert_txt_to_html()
+    print("Scraping and conversion completed.")
